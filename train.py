@@ -37,10 +37,13 @@ def train_cnn_rnn():
 
 	# Create a directory, everything related to the training will be saved in this directory
 	timestamp = str(int(time.time()))
+        timestamp = '1522391188'
 	trained_dir = './trained_results_' + timestamp + '/'
+        '''
 	if os.path.exists(trained_dir):
 		shutil.rmtree(trained_dir)
 	os.makedirs(trained_dir)
+        '''
 
 	graph = tf.Graph()
 	with graph.as_default():
@@ -66,9 +69,11 @@ def train_cnn_rnn():
 
 			# Checkpoint files will be saved in this directory during training
 			checkpoint_dir = './checkpoints_' + timestamp + '/'
+                        '''
 			if os.path.exists(checkpoint_dir):
 				shutil.rmtree(checkpoint_dir)
 			os.makedirs(checkpoint_dir)
+                        '''
 			checkpoint_prefix = os.path.join(checkpoint_dir, 'model')
 
 			def real_len(batches):
@@ -102,46 +107,50 @@ def train_cnn_rnn():
 			sess.run(tf.global_variables_initializer())
 
 			# Training starts here
-			train_batches = data_helper.batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
-			best_accuracy, best_at_step = 0, 0
+                        epoch_times = 10
+                        for _ in range(epoch_times):
+                            print '%d epoch'%(_)
+                            train_batches = data_helper.batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
+                            best_accuracy, best_at_step = 0, 0
 
-			# Train the model with x_train and y_train
-			for train_batch in train_batches:
-				x_train_batch, y_train_batch = zip(*train_batch)
-				train_step(x_train_batch, y_train_batch)
-				current_step = tf.train.global_step(sess, global_step)
+                            # Train the model with x_train and y_train
+                            for train_batch in train_batches:
+                                    x_train_batch, y_train_batch = zip(*train_batch)
+                                    train_step(x_train_batch, y_train_batch)
+                                    current_step = tf.train.global_step(sess, global_step)
 
-				# Evaluate the model with x_dev and y_dev
-				if current_step % params['evaluate_every'] == 0:
-					dev_batches = data_helper.batch_iter(list(zip(x_dev, y_dev)), params['batch_size'], 1)
+                                    # Evaluate the model with x_dev and y_dev
+                                    if current_step % params['evaluate_every'] == 0:
+                                            dev_batches = data_helper.batch_iter(list(zip(x_dev, y_dev)), params['batch_size'], 1)
 
-					total_dev_correct = 0
-					for dev_batch in dev_batches:
-						x_dev_batch, y_dev_batch = zip(*dev_batch)
-						acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
-						total_dev_correct += num_dev_correct
-					accuracy = float(total_dev_correct) / len(y_dev)
-					logging.info('Accuracy on dev set: {}'.format(accuracy))
+                                            total_dev_correct = 0
+                                            for dev_batch in dev_batches:
+                                                    x_dev_batch, y_dev_batch = zip(*dev_batch)
+                                                    acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
+                                                    total_dev_correct += num_dev_correct
+                                            accuracy = float(total_dev_correct) / len(y_dev)
+                                            logging.info('Accuracy on dev set: {}'.format(accuracy))
 
-					if accuracy >= best_accuracy:
-						best_accuracy, best_at_step = accuracy, current_step
-						path = saver.save(sess, checkpoint_prefix, global_step=current_step)
-						logging.critical('Saved model {} at step {}'.format(path, best_at_step))
-						logging.critical('Best accuracy {} at step {}'.format(best_accuracy, best_at_step))
-			logging.critical('Training is complete, testing the best model on x_test and y_test')
+                                            if accuracy >= best_accuracy:
+                                                    best_accuracy, best_at_step = accuracy, current_step
+                                                    path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+                                                    logging.critical('Saved model {} at step {}'.format(path, best_at_step))
+                                                    logging.critical('Best accuracy {} at step {}'.format(best_accuracy, best_at_step))
+                            logging.critical('Training is complete, testing the best model on x_test and y_test')
 
-			# Save the model files to trained_dir. predict.py needs trained model files. 
-			saver.save(sess, trained_dir + "best_model.ckpt")
+                            # Save the model files to trained_dir. predict.py needs trained model files. 
+                            saver.save(sess, trained_dir + "best_model.ckpt")
 
-			# Evaluate x_test and y_test
-			saver.restore(sess, checkpoint_prefix + '-' + str(best_at_step))
-			test_batches = data_helper.batch_iter(list(zip(x_test, y_test)), params['batch_size'], 1, shuffle=False)
-			total_test_correct = 0
-			for test_batch in test_batches:
-				x_test_batch, y_test_batch = zip(*test_batch)
-				acc, loss, num_test_correct, predictions = dev_step(x_test_batch, y_test_batch)
-				total_test_correct += int(num_test_correct)
-			logging.critical('Accuracy on test set: {}'.format(float(total_test_correct) / len(y_test)))
+                            # Evaluate x_test and y_test
+                            #saver.restore(sess, checkpoint_prefix + '-' + str(best_at_step))
+                            #saver.restore(sess, trained_dir + "best_model.ckpt")
+                            test_batches = data_helper.batch_iter(list(zip(x_test, y_test)), params['batch_size'], 1, shuffle=False)
+                            total_test_correct = 0
+                            for test_batch in test_batches:
+                                    x_test_batch, y_test_batch = zip(*test_batch)
+                                    acc, loss, num_test_correct, predictions = dev_step(x_test_batch, y_test_batch)
+                                    total_test_correct += int(num_test_correct)
+                            logging.critical('Accuracy on test set: {}'.format(float(total_test_correct) / len(y_test)))
 
 	# Save trained parameters and files since predict.py needs them
 	with open(trained_dir + 'words_index.json', 'w') as outfile:
