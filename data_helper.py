@@ -67,6 +67,7 @@ def build_vocab(sentences):
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
 	data = np.array(data)
+        np.random.shuffle(data)
 	data_size = len(data)
 	num_batches_per_epoch = int(data_size / batch_size) + 1
 
@@ -83,8 +84,8 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
 			yield shuffled_data[start_index:end_index]
 
 def load_data(filename):
-	df = pd.read_csv(filename, compression='zip')
-	selected = ['Category', 'Descript']
+	df = pd.read_csv(filename)
+	selected = ['label', 'comment_text']
 	non_selected = list(set(df.columns) - set(selected))
 
 	df = df.drop(non_selected, axis=1)
