@@ -89,6 +89,8 @@ def train_cnn_rnn():
 					cnn_rnn.real_len: real_len(x_batch),
 				}
 				_, step, loss, accuracy = sess.run([train_op, global_step, cnn_rnn.loss, cnn_rnn.accuracy], feed_dict)
+                                return loss, accuracy
+
 
 			def dev_step(x_batch, y_batch):
 				feed_dict = {
@@ -112,11 +114,14 @@ def train_cnn_rnn():
                             print '%d epoch'%(_)
                             train_batches = data_helper.batch_iter(list(zip(x_train, y_train)), params['batch_size'], params['num_epochs'])
                             best_accuracy, best_at_step = 0, 0
+                            train_loss, train_acc = [], []
 
                             # Train the model with x_train and y_train
                             for train_batch in train_batches:
                                     x_train_batch, y_train_batch = zip(*train_batch)
-                                    train_step(x_train_batch, y_train_batch)
+                                    loss, acc = train_step(x_train_batch, y_train_batch)
+                                    train_loss.append(loss)
+                                    train_acc.append(acc)
                                     current_step = tf.train.global_step(sess, global_step)
 
                                     # Evaluate the model with x_dev and y_dev
@@ -146,9 +151,12 @@ def train_cnn_rnn():
                             #saver.restore(sess, trained_dir + "best_model.ckpt")
                             test_batches = data_helper.batch_iter(list(zip(x_test, y_test)), params['batch_size'], 1, shuffle=False)
                             total_test_correct = 0
+                            dev_loss, dev_acc = [], []
                             for test_batch in test_batches:
                                     x_test_batch, y_test_batch = zip(*test_batch)
                                     acc, loss, num_test_correct, predictions = dev_step(x_test_batch, y_test_batch)
+                                    dev_loss.append(loss)
+                                    dev_acc.append(acc)
                                     total_test_correct += int(num_test_correct)
                             logging.critical('Accuracy on test set: {}'.format(float(total_test_correct) / len(y_test)))
 
